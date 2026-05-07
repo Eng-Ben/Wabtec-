@@ -1,7 +1,7 @@
 import sqlite3
 from datetime import datetime
 
-DB_PATH = "data/pressure_data.db"
+DB_PATH = "data/pressure_data.db" # Database file location
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)
@@ -23,6 +23,7 @@ def init_db():
 
 
 def save_data(data):
+        # Create the table if it does not already exist
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
 
@@ -35,16 +36,17 @@ def save_data(data):
                        alarm_status
                        ) VALUES (?, ?, ?, ?, ?
                        )""", (
-                           datetime.now().isoformat(),
-                           data["pressure_actual"],
-                           data["pressure_setpoint"],
-                           data["valve_output"],
-                           data["alarm_status"]
+                           datetime.now().isoformat(),      # Current timestamp in ISO format
+                           data["pressure_actual"],         # Measured pressure 
+                           data["pressure_setpoint"],       # Target pressure
+                           data["valve_output"],            # Control signal
+                           data["alarm_status"]             # Alarm Flag
                        ))
         conn.commit()
         conn.close()
 
 def read_all():
+    # Retrieve all stored pressure data from the database
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
