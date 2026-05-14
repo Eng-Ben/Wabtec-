@@ -1,22 +1,39 @@
-import time
-from plc_client import read_plc_data
-from database import init_db, save_data
+import json
+from database import init_db, save_test_result
+from plc_client import start_test
 
-LOG_INTERVAL_SECONDS = 5 # Time inbetween each data read (Seconds)
 
-# initialize the database and create the necessary tables if they don't exist
-init_db()
+def load_test_programs():
+    with open("test_programs/valve_tests.json", "r") as file:
+        return json.load(file)
 
-print("Pressure logging started. Press CTRL+C to stop.")
 
-try:
-    # Continuously read data from the PLC and save it to the database at regular intervals
-    while True:
-        data = read_plc_data()
-        save_data(data)
-        print("Saved:", data)
-        time.sleep(LOG_INTERVAL_SECONDS)
+def select_test_program(test_programs):
+    print("Available valve tests:")
 
-except KeyboardInterrupt:
-    # Handle the CTRL+C signal to stop the logging gracefully
-    print("Logging stopped.")
+    for key, program in test_programs.items():
+        print(f"{key}: {program['valve_type']}")
+
+    selected_key = input("Select valve test: ").strip().upper()
+
+    if selected_key not in test_programs:
+        raise ValueError("Invalid valve test selected")
+
+    return test_programs[selected_key]
+
+
+def main():
+    init_db()
+
+    test_programs = load_test_programs()
+    selected_program = select_test_program(test_programs)
+
+    result = start_test(selected_program)
+    save_test_result(result)
+
+    print("Inspection complete")
+    print(result)
+
+
+if __name__ == "__main__":
+    main()

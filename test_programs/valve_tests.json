@@ -1,0 +1,18 @@
+{
+  "VALVE_A": {
+    "program_id": 1,
+    "valve_type": "Valve A",
+    "pressure_setpoint": 6.0,
+    "min_pressure": 5.8,
+    "max_pressure": 6.2,
+    "test_duration_seconds": 10
+  },
+  "VALVE_B": {
+    "program_id": 2,
+    "valve_type": "Valve B",
+    "pressure_setpoint": 8.0,
+    "min_pressure": 7.7,
+    "max_pressure": 8.3,
+    "test_duration_seconds": 15
+  }
+}
