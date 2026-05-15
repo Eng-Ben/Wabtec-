@@ -1,35 +1,58 @@
+
+from report import generate_pdf_report
+from datetime import datetime
+
 import json
+import asyncio
+
+from input_reader import read_valve_code
+from plc_client import run_plc_test
 from database import init_db, save_test_result
-from plc_client import start_test
 
-
-def load_test_programs():
-    with open("test_programs/valve_tests.json", "r") as file:
+def load_json(path):
+    with open(path, "r") as file:
         return json.load(file)
-
-
-def select_test_program(test_programs):
-    print("Available valve tests:")
-
-    for key, program in test_programs.items():
-        print(f"{key}: {program['valve_type']}")
-
-    selected_key = input("Select valve test: ").strip().upper()
-
-    if selected_key not in test_programs:
-        raise ValueError("Invalid valve test selected")
-
-    return test_programs[selected_key]
 
 
 def main():
     init_db()
 
-    test_programs = load_test_programs()
-    selected_program = select_test_program(test_programs)
+    valve_tests = load_json("test_programs/valve_tests.json")
+    valve_map = load_json("test_programs/valve_map.json")
 
-    result = start_test(selected_program)
-    save_test_result(result)
+    scanned_code = read_valve_code()
+
+    if scanned_code not in valve_map:
+        print(f"Unknown valve code: {scanned_code}")
+        return
+
+    valve_info = valve_map[scanned_code]
+    valve_id = valve_info["valve_id"]
+    program_key = valve_info["program_key"]
+
+    if program_key not in valve_tests:
+        print(f"No test program found for: {program_key}")
+        return
+
+    test_program = valve_tests[program_key]
+
+    print(f"Starting test for {valve_id}")
+    print(f"Selected program: {program_key}")
+
+    result = asyncio.run(run_plc_test(test_program))
+
+    operator_name = input("Operator name: ").strip()
+    result["operator_name"] = operator_name
+
+    test_id = datetime.now().strftime("TEST-%Y%m%d-%H%M%S")
+    result["test_id"] = test_id
+
+    save_test_result(valve_id, result)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    pdf_path = f"reports/{valve_id}_{timestamp}.pdf"
+
+    generate_pdf_report(result, pdf_path)
+    print(f"PDF report created: {pdf_path}")
 
     print("Inspection complete")
     print(result)

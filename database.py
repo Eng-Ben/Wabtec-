@@ -12,6 +12,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS inspection_results (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             timestamp TEXT,
+            valve_id TEXT,
             program_id INTEGER,
             valve_type TEXT,
             pressure_setpoint REAL,
@@ -19,6 +20,7 @@ def init_db():
             min_pressure REAL,
             max_pressure REAL,
             test_duration_seconds REAL,
+            alarm_status INTEGER,
             result TEXT
         )
     """)
@@ -27,13 +29,14 @@ def init_db():
     conn.close()
 
 
-def save_test_result(result):
+def save_test_result(valve_id, result):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
     cursor.execute("""
         INSERT INTO inspection_results (
             timestamp,
+            valve_id,
             program_id,
             valve_type,
             pressure_setpoint,
@@ -41,10 +44,12 @@ def save_test_result(result):
             min_pressure,
             max_pressure,
             test_duration_seconds,
+            alarm_status,
             result
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         datetime.now().isoformat(),
+        valve_id,
         result["program_id"],
         result["valve_type"],
         result["pressure_setpoint"],
@@ -52,6 +57,7 @@ def save_test_result(result):
         result["min_pressure"],
         result["max_pressure"],
         result["test_duration_seconds"],
+        result["alarm_status"],
         result["result"]
     ))
 

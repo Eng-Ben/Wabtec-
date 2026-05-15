@@ -1,34 +1,60 @@
+import asyncio
 import random
-import time
+from asyncua import Client
+from config import OPC_SERVER_URL, OPC_NODES
 
 
-def start_test(test_program):
-    # Simulates sending the selected valve test program to the Siemens PLC
-    print(f"Starting PLC test program {test_program['program_id']} for {test_program['valve_type']}")
+async def run_plc_test(test_program):
+    async with Client(url=OPC_SERVER_URL) as client:
+        nodes = {
+            name: client.get_node(node_id)
+            for name, node_id in OPC_NODES.items()
+        }
 
-    time.sleep(test_program["test_duration_seconds"])
+        await nodes["start_test"].write_value(False)
 
-    measured_pressure = round(
-        random.uniform(
-            test_program["min_pressure"] - 0.3,
-            test_program["max_pressure"] + 0.3
-        ),
-        2
-    )
+        await nodes["selected_program_id"].write_value(test_program["program_id"])
+        await nodes["pressure_setpoint"].write_value(test_program["pressure_setpoint"])
+        await nodes["min_pressure"].write_value(test_program["min_pressure"])
+        await nodes["max_pressure"].write_value(test_program["max_pressure"])
+        await nodes["test_duration"].write_value(test_program["test_duration_seconds"])
 
-    passed = (
-        test_program["min_pressure"]
-        <= measured_pressure
-        <= test_program["max_pressure"]
-    )
+        await nodes["start_test"].write_value(True)
 
-    return {
-        "program_id": test_program["program_id"],
-        "valve_type": test_program["valve_type"],
-        "pressure_setpoint": test_program["pressure_setpoint"],
-        "measured_pressure": measured_pressure,
-        "min_pressure": test_program["min_pressure"],
-        "max_pressure": test_program["max_pressure"],
-        "test_duration_seconds": test_program["test_duration_seconds"],
-        "result": "PASS" if passed else "FAIL"
-    }
+        pressure_series = []
+        elapsed_time = 0.0
+
+        while True:
+            measured_pressure = await nodes["measured_pressure"].read_value()
+
+            pressure_series.append({
+                "time": elapsed_time,
+                "pressure": measured_pressure
+            })
+
+            test_done = await nodes["test_done"].read_value()
+
+            if test_done:
+                break
+
+            await asyncio.sleep(0.5)
+            elapsed_time += 0.5
+
+        measured_pressure = await nodes["measured_pressure"].read_value()
+        test_passed = await nodes["test_passed"].read_value()
+        alarm_status = await nodes["alarm_status"].read_value()
+
+        await nodes["start_test"].write_value(False)
+
+        return {
+            "program_id": test_program["program_id"],
+            "valve_type": test_program["valve_type"],
+            "pressure_setpoint": test_program["pressure_setpoint"],
+            "measured_pressure": measured_pressure,
+            "min_pressure": test_program["min_pressure"],
+            "max_pressure": test_program["max_pressure"],
+            "test_duration_seconds": test_program["test_duration_seconds"],
+            "alarm_status": int(alarm_status),
+            "result": "PASS" if test_passed else "FAIL",
+            "pressure_series": pressure_series
+        }
