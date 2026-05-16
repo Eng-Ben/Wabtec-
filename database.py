@@ -24,6 +24,15 @@ def init_db():
             result TEXT
         )
     """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS pressure_samples (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        test_id TEXT,
+        timestamp TEXT,
+        sample_time REAL,
+        pressure_value REAL
+    )
+""")
 
     conn.commit()
     conn.close()
@@ -63,3 +72,41 @@ def save_test_result(valve_id, result):
 
     conn.commit()
     conn.close()
+    
+def save_pressure_samples(test_id, pressure_series):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    for sample in pressure_series:
+        cursor.execute("""
+            INSERT INTO pressure_samples (
+                test_id,
+                timestamp,
+                sample_time,
+                pressure_value
+            ) VALUES (?, ?, ?, ?)
+        """, (
+            test_id,
+            datetime.now().isoformat(),
+            sample["time"],
+            sample["pressure"]
+        ))
+
+    conn.commit()
+    conn.close()
+
+def read_pressure_samples(test_id):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT sample_time, pressure_value
+        FROM pressure_samples
+        WHERE test_id = ?
+        ORDER BY sample_time
+    """, (test_id,))
+
+    rows = cursor.fetchall()
+
+    conn.close()
+    return rows

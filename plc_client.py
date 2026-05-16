@@ -1,5 +1,6 @@
 import asyncio
 import random
+import time
 from asyncua import Client
 from config import OPC_SERVER_URL, OPC_NODES
 
@@ -22,10 +23,12 @@ async def run_plc_test(test_program):
         await nodes["start_test"].write_value(True)
 
         pressure_series = []
-        elapsed_time = 0.0
+        start_time = time.time()
 
         while True:
             measured_pressure = await nodes["measured_pressure"].read_value()
+
+            elapsed_time = time.time() - start_time
 
             pressure_series.append({
                 "time": elapsed_time,
@@ -38,7 +41,6 @@ async def run_plc_test(test_program):
                 break
 
             await asyncio.sleep(0.5)
-            elapsed_time += 0.5
 
         measured_pressure = await nodes["measured_pressure"].read_value()
         test_passed = await nodes["test_passed"].read_value()

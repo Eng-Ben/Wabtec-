@@ -7,8 +7,7 @@ import asyncio
 
 from input_reader import read_valve_code
 from plc_client import run_plc_test
-from database import init_db, save_test_result
-
+from database import init_db, save_test_result, save_pressure_samples, read_pressure_samples
 def load_json(path):
     with open(path, "r") as file:
         return json.load(file)
@@ -48,6 +47,8 @@ def main():
     result["test_id"] = test_id
 
     save_test_result(valve_id, result)
+    save_pressure_samples(test_id, result["pressure_series"])
+    #print(read_pressure_samples(test_id))
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     pdf_path = f"reports/{valve_id}_{timestamp}.pdf"
 
