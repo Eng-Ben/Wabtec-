@@ -14,5 +14,9 @@
   "VALVE_B_001": {
     "valve_id": "VALVE_B_001",
     "program_key": "VALVE_B"
+  },
+  "VALVE_A_HOLD_TEST": {
+    "valve_id": "VALVE_A_001",
+    "program_key": "VALVE_A_HOLD_TEST"
   }
 }

@@ -99,14 +99,57 @@ def generate_pdf_report(test_result, output_path):
 
     c.setFont("Helvetica", 11)
     result_fields = [
+
+        ("Test Type", test_result["test_type"]),
+
         ("Measured Pressure", test_result["measured_pressure"]),
+
         ("Alarm Status", test_result["alarm_status"]),
+
         ("Final Result", test_result["result"])
     ]
 
     for label, value in result_fields:
         c.drawString(50, y, f"{label}: {value}")
         y -= 18
+   
+        # --------------------------------
+        # PRESSURE HOLD TEST INFORMATION
+        # --------------------------------
+
+    if test_result["test_type"] == "pressure_hold":
+
+        y -= 20
+
+        c.setFont("Helvetica-Bold", 13)
+        c.drawString(50, y, "PRESSURE HOLD TEST")
+
+        y -= 30
+
+        c.setFont("Helvetica", 11)
+
+        hold_fields = [
+
+            ("Hold Time (s)", test_result["hold_time_seconds"]),
+
+            ("Start Hold Pressure",
+            test_result["start_hold_pressure"]),
+
+            ("End Hold Pressure",
+            test_result["end_hold_pressure"]),
+
+            ("Pressure Drop",
+            test_result["pressure_drop"]),
+
+            ("Max Allowed Drop",
+            test_result["max_pressure_drop"])
+        ]
+
+        for label, value in hold_fields:
+
+            c.drawString(50, y, f"{label}: {value}")
+
+            y -= 18
 
     c.drawImage(graph_path, 50, 80, width=500, height=250)
 
