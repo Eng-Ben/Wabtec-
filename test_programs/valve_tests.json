@@ -5,7 +5,8 @@
     "pressure_setpoint": 6.0,
     "min_pressure": 5.8,
     "max_pressure": 6.2,
-    "test_duration_seconds": 10
+    "test_duration_seconds": 10,
+    "max_test_time_seconds": 60
   },
   "VALVE_B": {
     "program_id": 2,
@@ -13,16 +14,18 @@
     "pressure_setpoint": 8.0,
     "min_pressure": 7.7,
     "max_pressure": 8.3,
-    "test_duration_seconds": 15
+    "test_duration_seconds": 15,
+    "max_test_time_seconds": 60
   },
   "VALVE_A_HOLD_TEST": {
-    "program_id": 3,
+    "program_id": 1,
     "valve_type": "Valve A",
     "test_type": "VALVE_A_HOLD_TEST",
     "pressure_setpoint": 6.0,
     "min_pressure": 5.8,
     "max_pressure": 6.2,
     "hold_time_seconds": 10,
-    "max_pressure_drop": 0.2
+    "max_pressure_drop": 0.2,
+    "max_test_time_seconds": 60
   }
 }

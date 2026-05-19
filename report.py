@@ -27,6 +27,31 @@ def create_pressure_graph(test_result, graph_path):
     plt.close()
 
 
+def get_phase_summary(test_result):
+    phases = []
+
+    for point in test_result["pressure_series"]:
+        phase = point.get("phase", "UNKNOWN")
+
+        if phase not in phases:
+            phases.append(phase)
+
+    if len(phases) > 1 and "FALLBACK_SIMULATION" in phases:
+        phases.remove("FALLBACK_SIMULATION")
+
+    return phases
+
+
+def draw_fields(c, fields, x, y):
+    c.setFont("Helvetica", 11)
+
+    for label, value in fields:
+        c.drawString(x, y, f"{label}: {value}")
+        y -= 18
+
+    return y
+
+
 def generate_pdf_report(test_result, output_path):
     graph_path = output_path.replace(".pdf", "_graph.png")
     create_pressure_graph(test_result, graph_path)
@@ -60,7 +85,6 @@ def generate_pdf_report(test_result, output_path):
     c.drawString(50, y, "GENERAL INFORMATION")
     y -= 30
 
-    c.setFont("Helvetica", 11)
     general_fields = [
         ("Test ID", test_result["test_id"]),
         ("Operator", test_result["operator_name"]),
@@ -69,17 +93,13 @@ def generate_pdf_report(test_result, output_path):
         ("Report Generated", datetime.now().isoformat())
     ]
 
-    for label, value in general_fields:
-        c.drawString(50, y, f"{label}: {value}")
-        y -= 18
-
+    y = draw_fields(c, general_fields, 50, y)
     y -= 20
 
     c.setFont("Helvetica-Bold", 13)
     c.drawString(50, y, "TEST PARAMETERS")
     y -= 30
 
-    c.setFont("Helvetica", 11)
     parameter_fields = [
         ("Pressure Setpoint", test_result["pressure_setpoint"]),
         ("Minimum Pressure", test_result["min_pressure"]),
@@ -87,70 +107,63 @@ def generate_pdf_report(test_result, output_path):
         ("Test Duration", test_result["test_duration_seconds"])
     ]
 
-    for label, value in parameter_fields:
-        c.drawString(50, y, f"{label}: {value}")
-        y -= 18
-
+    y = draw_fields(c, parameter_fields, 50, y)
     y -= 20
 
     c.setFont("Helvetica-Bold", 13)
     c.drawString(50, y, "TEST RESULT")
     y -= 30
 
-    c.setFont("Helvetica", 11)
     result_fields = [
-
         ("Test Type", test_result["test_type"]),
-
         ("Measured Pressure", test_result["measured_pressure"]),
-
         ("Alarm Status", test_result["alarm_status"]),
-
         ("Final Result", test_result["result"])
     ]
 
-    for label, value in result_fields:
-        c.drawString(50, y, f"{label}: {value}")
-        y -= 18
-   
-        # --------------------------------
-        # PRESSURE HOLD TEST INFORMATION
-        # --------------------------------
+    y = draw_fields(c, result_fields, 50, y)
 
     if test_result["test_type"] == "pressure_hold":
-
         y -= 20
 
         c.setFont("Helvetica-Bold", 13)
         c.drawString(50, y, "PRESSURE HOLD TEST")
-
         y -= 30
 
-        c.setFont("Helvetica", 11)
-
         hold_fields = [
-
             ("Hold Time (s)", test_result["hold_time_seconds"]),
-
-            ("Start Hold Pressure",
-            test_result["start_hold_pressure"]),
-
-            ("End Hold Pressure",
-            test_result["end_hold_pressure"]),
-
-            ("Pressure Drop",
-            test_result["pressure_drop"]),
-
-            ("Max Allowed Drop",
-            test_result["max_pressure_drop"])
+            ("Start Hold Pressure", test_result["start_hold_pressure"]),
+            ("End Hold Pressure", test_result["end_hold_pressure"]),
+            ("Pressure Drop", test_result["pressure_drop"]),
+            ("Max Allowed Drop", test_result["max_pressure_drop"])
         ]
 
-        for label, value in hold_fields:
+        y = draw_fields(c, hold_fields, 50, y)
 
-            c.drawString(50, y, f"{label}: {value}")
+    y -= 20
 
-            y -= 18
+    c.setFont("Helvetica-Bold", 13)
+    c.drawString(50, y, "PLC PHASES DETECTED")
+    y -= 20
 
-    c.drawImage(graph_path, 50, 80, width=500, height=250)
+    phases = get_phase_summary(test_result)
+    phase_text = ", ".join(phases)
+
+    c.setFont("Helvetica", 10)
+
+    max_chars_per_line = 85
+    while len(phase_text) > max_chars_per_line:
+        split_index = phase_text.rfind(",", 0, max_chars_per_line)
+
+        if split_index == -1:
+            split_index = max_chars_per_line
+
+        c.drawString(50, y, phase_text[:split_index].strip())
+        phase_text = phase_text[split_index + 1:].strip()
+        y -= 14
+
+    c.drawString(50, y, phase_text)
+
+    c.drawImage(graph_path, 50, 60, width=500, height=230)
 
     c.save()
