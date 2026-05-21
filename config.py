@@ -1,4 +1,4 @@
-USE_REAL_PLC = False
+USE_REAL_PLC = True
 
 if USE_REAL_PLC:
     from config_files.real_plc import OPC_SERVER_URL, OPC_NODES

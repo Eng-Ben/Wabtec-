@@ -1,4 +1,4 @@
-OPC_SERVER_URL = "opc.tcp://192.168.0.1:4840"
+OPC_SERVER_URL = "opc.tcp://192.168.0.100:4840"
 
 OPC_NODES = {
     "start_test": 'ns=3;s="Tag_1"',
