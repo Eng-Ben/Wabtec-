@@ -1,10 +1,9 @@
 import asyncio
-from asyncua import Client
+from asyncua import Client, ua
 from config import OPC_SERVER_URL, OPC_NODES
 
 
 async def test_plc_connection():
-
     print("\n==============================")
     print("PLC CONNECTION TEST STARTED")
     print("==============================\n")
@@ -12,81 +11,58 @@ async def test_plc_connection():
     print(f"[INFO] OPC Server URL: {OPC_SERVER_URL}")
 
     try:
-
         async with Client(url=OPC_SERVER_URL) as client:
-
             print("[PASS] Connected to OPC server\n")
 
-            # -----------------------------
-            # LOAD NODES
-            # -----------------------------
+            nodes = {}
 
-            try:
-                start_test_node = client.get_node(
-                    OPC_NODES["start_test"]
-                )
-
-                print("[PASS] Found start_test node")
-
-            except Exception as e:
-                print(f"[FAIL] Could not load start_test node: {e}")
-                return
-
-            try:
-                test_done_node = client.get_node(
-                    OPC_NODES["test_done"]
-                )
-
-                print("[PASS] Found test_done node")
-
-            except Exception as e:
-                print(f"[FAIL] Could not load test_done node: {e}")
-                return
+            for name, node_id in OPC_NODES.items():
+                try:
+                    node = client.get_node(node_id)
+                    await node.read_browse_name()
+                    nodes[name] = node
+                    print(f"[PASS] Found node: {name} -> {node_id}")
+                except Exception as e:
+                    print(f"[FAIL] Could not find node {name}: {e}")
 
             print()
 
-            # -----------------------------
-            # READ TEST
-            # -----------------------------
+            if "test_done" in nodes:
+                try:
+                    value = await nodes["test_done"].read_value()
+                    print(f"[PASS] Read test_done value: {value}")
+                except Exception as e:
+                    print(f"[FAIL] Could not read test_done: {e}")
 
-            try:
+            if "start_test" in nodes:
+                try:
+                    await nodes["start_test"].write_value(
+                        ua.Variant(False, ua.VariantType.Boolean)
+                    )
+                    print("[PASS] Wrote start_test=False")
 
-                test_done = await test_done_node.read_value()
+                    await asyncio.sleep(0.5)
 
-                print(
-                    f"[PASS] Read TestDone value: {test_done}"
-                )
+                    await nodes["start_test"].write_value(
+                        ua.Variant(True, ua.VariantType.Boolean)
+                    )
+                    print("[PASS] Wrote start_test=True")
 
-            except Exception as e:
+                    await asyncio.sleep(0.5)
 
-                print(
-                    f"[FAIL] Could not read TestDone: {e}"
-                )
+                    await nodes["start_test"].write_value(
+                        ua.Variant(False, ua.VariantType.Boolean)
+                    )
+                    print("[PASS] Wrote start_test=False again")
 
-            # -----------------------------
-            # WRITE TEST
-            # -----------------------------
-
-            try:
-
-                await start_test_node.write_value(False)
-
-                print(
-                    "[PASS] Successfully wrote StartTest=False"
-                )
-
-            except Exception as e:
-
-                print(
-                    f"[FAIL] Could not write StartTest: {e}"
-                )
+                except Exception as e:
+                    print(f"[FAIL] Could not write start_test: {e}")
 
             print("\n==============================")
             print("PLC CONNECTION TEST COMPLETE")
             print("==============================\n")
 
     except Exception as e:
-
         print("\n[FAIL] Could not connect to OPC server")
         print(f"[ERROR] {e}\n")
 
