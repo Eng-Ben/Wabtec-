@@ -1,57 +1,34 @@
-import asyncio
-import random
+# import asyncio
+# import random
+# import time
+# from asyncua import Client, ua
+# from config import OPC_SERVER_URL, OPC_NODES
+
 import time
-
-from asyncua import Client, ua
-
-from config import OPC_SERVER_URL, OPC_NODES
-
-
-async def read_bool_node(nodes, node_name, default=False):
-    if node_name not in nodes:
-        return default
-
-    try:
-        return bool(await nodes[node_name].read_value())
-    except Exception:
-        return default
+import random
+import snap7
+from snap7.util import get_bool, set_bool
 
 
-async def read_optional_node(nodes, node_name, default=None):
-    if node_name not in nodes:
-        return default
-
-    try:
-        return await nodes[node_name].read_value()
-    except Exception:
-        return default
+PLC_IP = "192.168.0.100"
+PLC_RACK = 0
+PLC_SLOT = 1
 
 
-async def write_bool_if_exists(nodes, node_name, value):
-    if node_name in nodes:
-        await nodes[node_name].write_value(
-            ua.Variant(bool(value), ua.VariantType.Boolean)
-        )
+def read_m_bit(plc, byte_index, bit_index):
+    data = plc.mb_read(byte_index, 1)
+    return get_bool(data, 0, bit_index)
 
 
-async def write_if_exists(nodes, node_name, value):
-    if node_name not in nodes:
-        return
+def write_m_bit(plc, byte_index, bit_index, value):
+    data = plc.mb_read(byte_index, 1)
+    set_bool(data, 0, bit_index, value)
+    plc.mb_write(byte_index, 1, data)
 
-    if isinstance(value, bool):
-        await nodes[node_name].write_value(
-            ua.Variant(value, ua.VariantType.Boolean)
-        )
-    elif isinstance(value, int):
-        await nodes[node_name].write_value(
-            ua.Variant(value, ua.VariantType.Int32)
-        )
-    elif isinstance(value, float):
-        await nodes[node_name].write_value(
-            ua.Variant(value, ua.VariantType.Float)
-        )
-    else:
-        await nodes[node_name].write_value(value)
+
+def read_q_bit(plc, byte_index, bit_index):
+    data = plc.ab_read(byte_index, 1)
+    return get_bool(data, 0, bit_index)
 
 
 def get_active_phase(step_1, step_2, step_3, step_4, step_5, step_6):
@@ -71,34 +48,19 @@ def get_active_phase(step_1, step_2, step_3, step_4, step_5, step_6):
     return "WAITING"
 
 
-async def run_plc_test(test_program):
-    async with Client(url=OPC_SERVER_URL) as client:
-        nodes = {}
+def run_plc_test(test_program):
+    plc = snap7.client.Client()
 
-        for name, node_id in OPC_NODES.items():
-            try:
-                node = client.get_node(node_id)
-                await node.read_browse_name()
-                nodes[name] = node
-            except Exception as e:
-                print(f"[WARN] Could not load node {name}: {e}")
+    try:
+        plc.connect(PLC_IP, PLC_RACK, PLC_SLOT)
 
-        if "start_test" not in nodes:
-            raise RuntimeError("Missing required OPC node: start_test")
+        if not plc.get_connected():
+            raise RuntimeError("Could not connect to PLC with Snap7")
 
-        if "test_done" not in nodes:
-            raise RuntimeError("Missing required OPC node: test_done")
+        write_m_bit(plc, 10, 0, False)
+        time.sleep(0.2)
 
-        await write_bool_if_exists(nodes, "start_test", False)
-        await asyncio.sleep(0.2)
-
-        await write_if_exists(nodes, "selected_program_id", test_program.get("program_id", 1))
-        await write_if_exists(nodes, "pressure_setpoint", test_program.get("pressure_setpoint", 0))
-        await write_if_exists(nodes, "min_pressure", test_program.get("min_pressure", 0))
-        await write_if_exists(nodes, "max_pressure", test_program.get("max_pressure", 0))
-        await write_if_exists(nodes, "test_duration", test_program.get("test_duration_seconds", 10))
-
-        await write_bool_if_exists(nodes, "start_test", True)
+        write_m_bit(plc, 10, 0, True)
 
         pressure_series = []
         start_time = time.time()
@@ -122,7 +84,8 @@ async def run_plc_test(test_program):
 
         last_real_phase = "WAITING"
 
-        print("PLC test started")
+        print("PLC test started with Snap7")
+        print(f"PLC IP: {PLC_IP}")
         print(f"Test type: {test_type}")
         print(f"Setpoint: {pressure_setpoint}")
         print()
@@ -130,14 +93,19 @@ async def run_plc_test(test_program):
         while True:
             elapsed_time = time.time() - start_time
 
-            step_1 = await read_bool_node(nodes, "step_1")
-            step_2 = await read_bool_node(nodes, "step_2")
-            step_3 = await read_bool_node(nodes, "step_3")
-            step_4 = await read_bool_node(nodes, "step_4")
-            step_5 = await read_bool_node(nodes, "step_5")
-            step_6 = await read_bool_node(nodes, "step_6")
+            step_1 = read_m_bit(plc, 0, 1)
+            step_2 = read_m_bit(plc, 0, 2)
+            step_3 = read_m_bit(plc, 0, 3)
+            step_4 = read_m_bit(plc, 0, 4)
+            step_5 = read_m_bit(plc, 0, 5)
+            step_6 = read_m_bit(plc, 0, 6)
 
-            test_done = await read_bool_node(nodes, "test_done")
+            finish_light = read_q_bit(plc, 0, 4)
+
+            v5 = read_q_bit(plc, 0, 5)
+            v6 = read_q_bit(plc, 0, 6)
+            v9 = read_q_bit(plc, 0, 7)
+            light_dp = read_q_bit(plc, 0, 0)
 
             active_phase = get_active_phase(
                 step_1,
@@ -151,48 +119,50 @@ async def run_plc_test(test_program):
             if active_phase != "WAITING":
                 last_real_phase = active_phase
 
-            if test_done and active_phase == "WAITING":
+            if finish_light and active_phase == "WAITING":
                 active_phase = last_real_phase
 
-            real_pressure = await read_optional_node(nodes, "measured_pressure")
+            if step_1:
+                current_pressure += random.uniform(0.25, 0.55)
 
-            if real_pressure is not None:
-                current_pressure = round(float(real_pressure), 2)
+            elif step_2:
+                if current_pressure < pressure_setpoint:
+                    current_pressure += random.uniform(0.05, 0.20)
+                else:
+                    current_pressure += random.uniform(-0.03, 0.03)
+
+            elif step_3:
+                if not hold_started:
+                    hold_started = True
+                    hold_start_time = time.time()
+                    hold_start_pressure = current_pressure
+
+                current_pressure -= random.uniform(0.00, 0.03)
+
+            elif step_4:
+                current_pressure -= random.uniform(0.10, 0.30)
+
+            elif step_5 or step_6:
+                current_pressure += random.uniform(-0.02, 0.02)
+
             else:
-                if step_1:
+                if current_pressure < pressure_setpoint:
                     current_pressure += random.uniform(0.25, 0.55)
-                elif step_2:
-                    if current_pressure < pressure_setpoint:
-                        current_pressure += random.uniform(0.05, 0.20)
-                    else:
-                        current_pressure += random.uniform(-0.03, 0.03)
-                elif step_3:
+
+                elif test_type == "pressure_hold":
                     if not hold_started:
                         hold_started = True
                         hold_start_time = time.time()
                         hold_start_pressure = current_pressure
 
                     current_pressure -= random.uniform(0.00, 0.03)
-                elif step_4:
-                    current_pressure -= random.uniform(0.10, 0.30)
-                elif step_5 or step_6:
-                    current_pressure += random.uniform(-0.02, 0.02)
+
                 else:
-                    if current_pressure < pressure_setpoint:
-                        current_pressure += random.uniform(0.25, 0.55)
-                    elif test_type == "pressure_hold":
-                        if not hold_started:
-                            hold_started = True
-                            hold_start_time = time.time()
-                            hold_start_pressure = current_pressure
+                    current_pressure += random.uniform(-0.02, 0.02)
 
-                        current_pressure -= random.uniform(0.00, 0.03)
-                    else:
-                        current_pressure += random.uniform(-0.02, 0.02)
-
-                current_pressure = max(0.0, current_pressure)
-                current_pressure = min(current_pressure, max_pressure + 0.5)
-                current_pressure = round(current_pressure, 2)
+            current_pressure = max(0.0, current_pressure)
+            current_pressure = min(current_pressure, max_pressure + 0.5)
+            current_pressure = round(current_pressure, 2)
 
             pressure_series.append({
                 "time": round(elapsed_time, 1),
@@ -206,26 +176,15 @@ async def run_plc_test(test_program):
                 f"Pressure: {current_pressure} | "
                 f"S1={step_1} S2={step_2} S3={step_3} "
                 f"S4={step_4} S5={step_5} S6={step_6} | "
-                f"Done={test_done}"
+                f"light_DP={light_dp} v5={v5} v6={v6} v9={v9} | "
+                f"Done={finish_light}"
             )
 
-            if test_done:
-                await asyncio.sleep(1)
-
-                measured_pressure_node = await read_optional_node(
-                    nodes,
-                    "measured_pressure",
-                    current_pressure
-                )
-
-                if measured_pressure_node is not None:
-                    current_pressure = round(float(measured_pressure_node), 2)
-
+            if finish_light:
                 if pressure_series:
-                    pressure_series[-1]["pressure"] = current_pressure
                     pressure_series[-1]["phase"] = last_real_phase
 
-                print("PLC reported test_done")
+                print("PLC reported finish_ligth(test)")
                 break
 
             if test_type == "pressure_hold" and hold_started:
@@ -234,14 +193,14 @@ async def run_plc_test(test_program):
                     break
 
             if elapsed_time >= max_test_time:
-                await write_bool_if_exists(nodes, "start_test", False)
+                write_m_bit(plc, 10, 0, False)
                 raise TimeoutError(
-                    "PLC test timed out. test_done was not received."
+                    "PLC test timed out. finish_ligth(test) was not received."
                 )
 
-            await asyncio.sleep(0.5)
+            time.sleep(0.5)
 
-        await write_bool_if_exists(nodes, "start_test", False)
+        write_m_bit(plc, 10, 0, False)
 
         measured_pressure = current_pressure
 
@@ -262,6 +221,7 @@ async def run_plc_test(test_program):
                 pressure_drop <= test_program.get("max_pressure_drop", 0)
                 and hold_end_pressure >= min_pressure
             )
+
         else:
             hold_start_pressure = measured_pressure
             hold_end_pressure = measured_pressure
@@ -287,3 +247,14 @@ async def run_plc_test(test_program):
             "result": "PASS" if passed else "FAIL",
             "pressure_series": pressure_series
         }
+
+    finally:
+        try:
+            write_m_bit(plc, 10, 0, False)
+        except Exception:
+            pass
+
+        try:
+            plc.disconnect()
+        except Exception:
+            pass

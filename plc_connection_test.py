@@ -1,71 +1,112 @@
-import asyncio
-from asyncua import Client, ua
-from config import OPC_SERVER_URL, OPC_NODES
+# import asyncio
+# from asyncua import Client, ua
+# from config import OPC_SERVER_URL, OPC_NODES
+
+import time
+import snap7
+from snap7.util import get_bool, set_bool
 
 
-async def test_plc_connection():
+PLC_IP = "192.168.0.100"
+PLC_RACK = 0
+PLC_SLOT = 1
+
+
+def read_m_bit(plc, byte_index, bit_index):
+    data = plc.mb_read(byte_index, 1)
+    return get_bool(data, 0, bit_index)
+
+
+def write_m_bit(plc, byte_index, bit_index, value):
+    data = plc.mb_read(byte_index, 1)
+    set_bool(data, 0, bit_index, value)
+    plc.mb_write(byte_index, 1, data)
+
+
+def read_q_bit(plc, byte_index, bit_index):
+    data = plc.ab_read(byte_index, 1)
+    return get_bool(data, 0, bit_index)
+
+
+def test_plc_connection():
     print("\n==============================")
-    print("PLC CONNECTION TEST STARTED")
+    print("PLC SNAP7 CONNECTION TEST STARTED")
     print("==============================\n")
 
-    print(f"[INFO] OPC Server URL: {OPC_SERVER_URL}")
+    plc = snap7.client.Client()
 
     try:
-        async with Client(url=OPC_SERVER_URL) as client:
-            print("[PASS] Connected to OPC server\n")
+        print(f"[INFO] Connecting to PLC at {PLC_IP}")
+        plc.connect(PLC_IP, PLC_RACK, PLC_SLOT)
 
-            nodes = {}
+        if not plc.get_connected():
+            print("[FAIL] Snap7 did not connect to PLC")
+            return
 
-            for name, node_id in OPC_NODES.items():
-                try:
-                    node = client.get_node(node_id)
-                    await node.read_browse_name()
-                    nodes[name] = node
-                    print(f"[PASS] Found node: {name} -> {node_id}")
-                except Exception as e:
-                    print(f"[FAIL] Could not find node {name}: {e}")
+        print("[PASS] Connected to PLC with Snap7\n")
 
-            print()
+        print("[INFO] Reading current PLC states")
 
-            if "test_done" in nodes:
-                try:
-                    value = await nodes["test_done"].read_value()
-                    print(f"[PASS] Read test_done value: {value}")
-                except Exception as e:
-                    print(f"[FAIL] Could not read test_done: {e}")
+        step_1 = read_m_bit(plc, 0, 1)
+        step_2 = read_m_bit(plc, 0, 2)
+        step_3 = read_m_bit(plc, 0, 3)
+        step_4 = read_m_bit(plc, 0, 4)
+        step_5 = read_m_bit(plc, 0, 5)
+        step_6 = read_m_bit(plc, 0, 6)
 
-            if "start_test" in nodes:
-                try:
-                    await nodes["start_test"].write_value(
-                        ua.Variant(False, ua.VariantType.Boolean)
-                    )
-                    print("[PASS] Wrote start_test=False")
+        light_dp = read_q_bit(plc, 0, 0)
+        finish_light = read_q_bit(plc, 0, 4)
+        v5 = read_q_bit(plc, 0, 5)
+        v6 = read_q_bit(plc, 0, 6)
+        v9 = read_q_bit(plc, 0, 7)
 
-                    await asyncio.sleep(0.5)
+        print(f"[INFO] step_1 M0.1: {step_1}")
+        print(f"[INFO] step_2 M0.2: {step_2}")
+        print(f"[INFO] step_3 M0.3: {step_3}")
+        print(f"[INFO] step_4 M0.4: {step_4}")
+        print(f"[INFO] step_5 M0.5: {step_5}")
+        print(f"[INFO] step_6 M0.6: {step_6}")
 
-                    await nodes["start_test"].write_value(
-                        ua.Variant(True, ua.VariantType.Boolean)
-                    )
-                    print("[PASS] Wrote start_test=True")
+        print(f"[INFO] light_DP Q0.0: {light_dp}")
+        print(f"[INFO] finish_ligth(test) Q0.4: {finish_light}")
+        print(f"[INFO] v5 Q0.5: {v5}")
+        print(f"[INFO] v6 Q0.6: {v6}")
+        print(f"[INFO] v9 Q0.7: {v9}")
 
-                    await asyncio.sleep(0.5)
+        print("\n[INFO] Writing Tag_1 M10.0 = FALSE")
+        write_m_bit(plc, 10, 0, False)
+        time.sleep(0.5)
 
-                    await nodes["start_test"].write_value(
-                        ua.Variant(False, ua.VariantType.Boolean)
-                    )
-                    print("[PASS] Wrote start_test=False again")
+        print("[INFO] Writing Tag_1 M10.0 = TRUE")
+        write_m_bit(plc, 10, 0, True)
+        time.sleep(1.0)
 
-                except Exception as e:
-                    print(f"[FAIL] Could not write start_test: {e}")
+        step_1_after_start = read_m_bit(plc, 0, 1)
+        light_dp_after_start = read_q_bit(plc, 0, 0)
 
-            print("\n==============================")
-            print("PLC CONNECTION TEST COMPLETE")
-            print("==============================\n")
+        print(f"[INFO] step_1 after start: {step_1_after_start}")
+        print(f"[INFO] light_DP after start: {light_dp_after_start}")
+
+        print("[INFO] Writing Tag_1 M10.0 = FALSE")
+        write_m_bit(plc, 10, 0, False)
+
+        print("\n[PASS] Snap7 read/write test completed")
 
     except Exception as e:
-        print("\n[FAIL] Could not connect to OPC server")
-        print(f"[ERROR] {e}\n")
+        print("\n[FAIL] Snap7 PLC connection test failed")
+        print(f"[ERROR] {e}")
+
+    finally:
+        try:
+            plc.disconnect()
+            print("[INFO] Disconnected from PLC")
+        except Exception:
+            pass
+
+        print("\n==============================")
+        print("PLC SNAP7 CONNECTION TEST COMPLETE")
+        print("==============================\n")
 
 
 if __name__ == "__main__":
-    asyncio.run(test_plc_connection())
+    test_plc_connection()
