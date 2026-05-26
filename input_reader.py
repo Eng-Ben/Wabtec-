@@ -1,3 +1,10 @@
-def read_valve_code():
-    # Reads valve code from keyboard, barcode scanner, or RFID reader. For now, we will just read from the keyboard.
-    return input("Scan or type valve ID: ").strip().upper()
+def read_valve_code(valid_codes=None):
+    print()
+    print("Available valve/test programs:")
+
+    if valid_codes:
+        for code in valid_codes:
+            print(f"  - {code}")
+
+    print()
+    return input("Scan or type valve ID: ").strip()

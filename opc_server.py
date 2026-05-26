@@ -18,7 +18,7 @@ async def reset_states(
     step_6,
     v5,
     v6,
-    v9
+    v9,
 ):
     await start_test.write_value(False)
     await test_done.write_value(False)
@@ -51,123 +51,66 @@ async def main():
     objects = server.nodes.objects
 
     test_control = await objects.add_object(
-        f"ns={idx};s=DB_TestControl",
-        "DB_TestControl"
+        f"ns={idx};s=DB_TestControl", "DB_TestControl"
     )
 
     start_test = await test_control.add_variable(
-        f"ns={idx};s=StartTest",
-        "StartTest",
-        False
+        f"ns={idx};s=StartTest", "StartTest", False
     )
 
     selected_program_id = await test_control.add_variable(
-        f"ns={idx};s=SelectedProgramID",
-        "SelectedProgramID",
-        0
+        f"ns={idx};s=SelectedProgramID", "SelectedProgramID", 0
     )
 
     pressure_setpoint = await test_control.add_variable(
-        f"ns={idx};s=PressureSetpoint",
-        "PressureSetpoint",
-        0.0
+        f"ns={idx};s=PressureSetpoint", "PressureSetpoint", 0.0
     )
 
     min_pressure = await test_control.add_variable(
-        f"ns={idx};s=MinPressure",
-        "MinPressure",
-        0.0
+        f"ns={idx};s=MinPressure", "MinPressure", 0.0
     )
 
     max_pressure = await test_control.add_variable(
-        f"ns={idx};s=MaxPressure",
-        "MaxPressure",
-        0.0
+        f"ns={idx};s=MaxPressure", "MaxPressure", 0.0
     )
 
     test_duration = await test_control.add_variable(
-        f"ns={idx};s=TestDuration",
-        "TestDuration",
-        0
+        f"ns={idx};s=TestDuration", "TestDuration", 0
     )
 
     test_done = await test_control.add_variable(
-        f"ns={idx};s=TestDone",
-        "TestDone",
-        False
+        f"ns={idx};s=TestDone", "TestDone", False
     )
 
     measured_pressure = await test_control.add_variable(
-        f"ns={idx};s=MeasuredPressure",
-        "MeasuredPressure",
-        0.0
+        f"ns={idx};s=MeasuredPressure", "MeasuredPressure", 0.0
     )
 
     test_passed = await test_control.add_variable(
-        f"ns={idx};s=TestPassed",
-        "TestPassed",
-        False
+        f"ns={idx};s=TestPassed", "TestPassed", False
     )
 
     alarm_status = await test_control.add_variable(
-        f"ns={idx};s=AlarmStatus",
-        "AlarmStatus",
-        0
+        f"ns={idx};s=AlarmStatus", "AlarmStatus", 0
     )
 
-    step_1 = await test_control.add_variable(
-        f"ns={idx};s=step_1",
-        "step_1",
-        False
-    )
+    step_1 = await test_control.add_variable(f"ns={idx};s=step_1", "step_1", False)
 
-    step_2 = await test_control.add_variable(
-        f"ns={idx};s=step_2",
-        "step_2",
-        False
-    )
+    step_2 = await test_control.add_variable(f"ns={idx};s=step_2", "step_2", False)
 
-    step_3 = await test_control.add_variable(
-        f"ns={idx};s=step_3",
-        "step_3",
-        False
-    )
+    step_3 = await test_control.add_variable(f"ns={idx};s=step_3", "step_3", False)
 
-    step_4 = await test_control.add_variable(
-        f"ns={idx};s=step_4",
-        "step_4",
-        False
-    )
+    step_4 = await test_control.add_variable(f"ns={idx};s=step_4", "step_4", False)
 
-    step_5 = await test_control.add_variable(
-        f"ns={idx};s=step_5",
-        "step_5",
-        False
-    )
+    step_5 = await test_control.add_variable(f"ns={idx};s=step_5", "step_5", False)
 
-    step_6 = await test_control.add_variable(
-        f"ns={idx};s=step_6",
-        "step_6",
-        False
-    )
+    step_6 = await test_control.add_variable(f"ns={idx};s=step_6", "step_6", False)
 
-    v5 = await test_control.add_variable(
-        f"ns={idx};s=v5",
-        "v5",
-        False
-    )
+    v5 = await test_control.add_variable(f"ns={idx};s=v5", "v5", False)
 
-    v6 = await test_control.add_variable(
-        f"ns={idx};s=v6",
-        "v6",
-        False
-    )
+    v6 = await test_control.add_variable(f"ns={idx};s=v6", "v6", False)
 
-    v9 = await test_control.add_variable(
-        f"ns={idx};s=v9",
-        "v9",
-        False
-    )
+    v9 = await test_control.add_variable(f"ns={idx};s=v9", "v9", False)
 
     writable_nodes = [
         start_test,
@@ -188,7 +131,7 @@ async def main():
         step_6,
         v5,
         v6,
-        v9
+        v9,
     ]
 
     for node in writable_nodes:
@@ -222,7 +165,7 @@ async def main():
                     step_6,
                     v5,
                     v6,
-                    v9
+                    v9,
                 )
 
                 await start_test.write_value(True)
@@ -247,15 +190,11 @@ async def main():
                 for _ in range(max(1, steps // 3)):
                     target_pressure = random.uniform(min_p, max_p)
 
-                    current_pressure += (
-                        target_pressure - current_pressure
-                    ) * 0.35
+                    current_pressure += (target_pressure - current_pressure) * 0.35
 
                     simulated_pressure = round(current_pressure, 2)
 
-                    await measured_pressure.write_value(
-                        simulated_pressure
-                    )
+                    await measured_pressure.write_value(simulated_pressure)
 
                     await asyncio.sleep(0.5)
 
@@ -268,15 +207,11 @@ async def main():
                 for _ in range(max(1, steps // 3)):
                     target_pressure = random.uniform(min_p, max_p)
 
-                    current_pressure += (
-                        target_pressure - current_pressure
-                    ) * 0.20
+                    current_pressure += (target_pressure - current_pressure) * 0.20
 
                     simulated_pressure = round(current_pressure, 2)
 
-                    await measured_pressure.write_value(
-                        simulated_pressure
-                    )
+                    await measured_pressure.write_value(simulated_pressure)
 
                     await asyncio.sleep(0.5)
 
@@ -291,9 +226,7 @@ async def main():
 
                     simulated_pressure = round(current_pressure, 2)
 
-                    await measured_pressure.write_value(
-                        simulated_pressure
-                    )
+                    await measured_pressure.write_value(simulated_pressure)
 
                     await asyncio.sleep(0.5)
 
@@ -323,17 +256,13 @@ async def main():
                 await step_6.write_value(True)
                 await v9.write_value(True)
 
-                passed = (
-                    min_p
-                    <= simulated_pressure
-                    <= max_p
-                )
+                passed = min_p <= simulated_pressure <= max_p
 
                 await test_passed.write_value(passed)
                 await alarm_status.write_value(0)
 
                 await asyncio.sleep(1)
-                
+
                 await test_done.write_value(True)
 
                 print("SIMULATED TEST COMPLETE")

@@ -6,7 +6,6 @@ import time
 import snap7
 from snap7.util import get_bool, set_bool
 
-
 PLC_IP = "192.168.0.100"
 PLC_RACK = 0
 PLC_SLOT = 1

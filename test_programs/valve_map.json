@@ -1,22 +1,5 @@
 {
-  "04A92F18": {
-    "valve_id": "VALVE_A_001",
-    "program_key": "VALVE_A"
-  },
-  "91BC22D0": {
-    "valve_id": "VALVE_B_001",
-    "program_key": "VALVE_B"
-  },
-  "VALVE_A_001": {
-    "valve_id": "VALVE_A_001",
-    "program_key": "VALVE_A"
-  },
-  "VALVE_B_001": {
-    "valve_id": "VALVE_B_001",
-    "program_key": "VALVE_B"
-  },
-  "VALVE_A_HOLD_TEST": {
-    "valve_id": "VALVE_A_001",
-    "program_key": "VALVE_A_HOLD_TEST"
-  }
+	"PDW_25_915": "PDW_25_915",
+	"PDW-25.915": "PDW_25_915",
+	"25.915": "PDW_25_915"
 }

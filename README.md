@@ -80,6 +80,7 @@ Simulation Mode
 Simulation mode allows the full software system to be tested without a real PLC.
 
 Simulation includes:
+
 - OPC UA server
 - PLC state progression
 - Pressure simulation
@@ -169,6 +170,7 @@ Current status:
 Software proof-of-concept completed.
 
 The system successfully:
+
 - Simulates PLC sequences
 - Tracks PLC phases
 - Generates reports

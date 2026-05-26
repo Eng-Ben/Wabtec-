@@ -42,7 +42,8 @@ def save_test_result(valve_id, result):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    cursor.execute("""
+    cursor.execute(
+        """
         INSERT INTO inspection_results (
             timestamp,
             valve_id,
@@ -56,55 +57,60 @@ def save_test_result(valve_id, result):
             alarm_status,
             result
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (
-        datetime.now().isoformat(),
-        valve_id,
-        result["program_id"],
-        result["valve_type"],
-        result["pressure_setpoint"],
-        result["measured_pressure"],
-        result["min_pressure"],
-        result["max_pressure"],
-        result["test_duration_seconds"],
-        result["alarm_status"],
-        result["result"]
-    ))
+    """,
+        (
+            datetime.now().isoformat(),
+            valve_id,
+            result["program_id"],
+            result["valve_type"],
+            result["pressure_setpoint"],
+            result["measured_pressure"],
+            result["min_pressure"],
+            result["max_pressure"],
+            result["test_duration_seconds"],
+            result["alarm_status"],
+            result["result"],
+        ),
+    )
 
     conn.commit()
     conn.close()
-    
+
+
 def save_pressure_samples(test_id, pressure_series):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
     for sample in pressure_series:
-        cursor.execute("""
+        cursor.execute(
+            """
             INSERT INTO pressure_samples (
                 test_id,
                 timestamp,
                 sample_time,
                 pressure_value
             ) VALUES (?, ?, ?, ?)
-        """, (
-            test_id,
-            datetime.now().isoformat(),
-            sample["time"],
-            sample["pressure"]
-        ))
+        """,
+            (test_id, datetime.now().isoformat(), sample["time"], sample["pressure"]),
+        )
 
     conn.commit()
     conn.close()
+
 
 def read_pressure_samples(test_id):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    cursor.execute("""
+    cursor.execute(
+        """
         SELECT sample_time, pressure_value
         FROM pressure_samples
         WHERE test_id = ?
         ORDER BY sample_time
-    """, (test_id,))
+    """,
+        (test_id,),
+    )
 
     rows = cursor.fetchall()
 

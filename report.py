@@ -64,7 +64,7 @@ def generate_pdf_report(test_result, output_path):
         760,
         width=120,
         height=50,
-        preserveAspectRatio=True
+        preserveAspectRatio=True,
     )
 
     c.setFont("Helvetica-Bold", 18)
@@ -90,7 +90,7 @@ def generate_pdf_report(test_result, output_path):
         ("Operator", test_result["operator_name"]),
         ("Valve Type", test_result["valve_type"]),
         ("Program ID", test_result["program_id"]),
-        ("Report Generated", datetime.now().isoformat())
+        ("Report Generated", datetime.now().isoformat()),
     ]
 
     y = draw_fields(c, general_fields, 50, y)
@@ -104,7 +104,7 @@ def generate_pdf_report(test_result, output_path):
         ("Pressure Setpoint", test_result["pressure_setpoint"]),
         ("Minimum Pressure", test_result["min_pressure"]),
         ("Maximum Pressure", test_result["max_pressure"]),
-        ("Test Duration", test_result["test_duration_seconds"])
+        ("Test Duration", test_result["test_duration_seconds"]),
     ]
 
     y = draw_fields(c, parameter_fields, 50, y)
@@ -118,7 +118,7 @@ def generate_pdf_report(test_result, output_path):
         ("Test Type", test_result["test_type"]),
         ("Measured Pressure", test_result["measured_pressure"]),
         ("Alarm Status", test_result["alarm_status"]),
-        ("Final Result", test_result["result"])
+        ("Final Result", test_result["result"]),
     ]
 
     y = draw_fields(c, result_fields, 50, y)
@@ -135,7 +135,7 @@ def generate_pdf_report(test_result, output_path):
             ("Start Hold Pressure", test_result["start_hold_pressure"]),
             ("End Hold Pressure", test_result["end_hold_pressure"]),
             ("Pressure Drop", test_result["pressure_drop"]),
-            ("Max Allowed Drop", test_result["max_pressure_drop"])
+            ("Max Allowed Drop", test_result["max_pressure_drop"]),
         ]
 
         y = draw_fields(c, hold_fields, 50, y)
@@ -159,7 +159,7 @@ def generate_pdf_report(test_result, output_path):
             split_index = max_chars_per_line
 
         c.drawString(50, y, phase_text[:split_index].strip())
-        phase_text = phase_text[split_index + 1:].strip()
+        phase_text = phase_text[split_index + 1 :].strip()
         y -= 14
 
     c.drawString(50, y, phase_text)
