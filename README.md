@@ -1,178 +1,129 @@
-Wabtec Valve Pressure Test System
+Wabtec Valve Test Bench Prototype
 
-Project Overview
+Overview
 
-This project is a proof-of-concept automated valve pressure testing system developed for Wabtec.
+This project is a prototype automation system developed for a pneumatic valve test bench in collaboration with Wabtec.
 
-The system simulates and later integrates with a Siemens PLC to automate pneumatic valve testing procedures. A Raspberry Pi acts as the main controller and communicates with the PLC through OPC UA.
+The system combines:
 
-The system can:
-
-- Start automated PLC test sequences
-- Simulate or read pressure values
-- Track PLC state machine phases
-- Detect pressure hold/leak behaviour
-- Generate PDF inspection reports
-- Log valve test information
-- Run in both simulation mode and real PLC mode
-
-System Architecture
-
-Main Components
-
+- Siemens S7-1200 PLC
 - Raspberry Pi 5
-- Siemens PLC
-- OPC UA communication
-- Python-based test client
-- PDF report generation
+- Python supervisory software
+- Snap7 PLC communication
 - SQLite logging
-- Simulated pneumatic process
+- Automatic PDF report generation
 
-Main Python Files
+The PLC handles the deterministic sequence logic and output control, while the Raspberry Pi handles:
 
-main.py
-Starts and runs a selected valve test program.
+- valve program selection
+- PLC communication
+- test supervision
+- data logging
+- PDF report generation
 
-plc_client.py
-Handles OPC UA communication between Python and PLC/simulation server.
+The project was developed as part of an engineering student project focused on industrial automation and digital test traceability.
 
-opc_server.py
-Simulation server used before connecting to the real PLC.
+Current Prototype Functionality
 
-report.py
-Generates PDF inspection reports and pressure graphs.
+The current prototype is capable of:
 
-config.py
-Selects between simulation mode and real PLC mode.
+- Connecting to a Siemens PLC using Snap7
+- Starting and monitoring a PLC sequence
+- Selecting valve programs dynamically from JSON files
+- Logging sequence progression
+- Storing test data in SQLite
+- Generating PDF inspection reports automatically
 
-config_files/simulation.py
-OPC configuration for simulation environment.
+The PLC sequence is started using a physical push button connected to the PLC input system, while the Raspberry Pi acts as the supervisory layer.
 
-config_files/real_plc.py
-OPC configuration for real PLC environment.
+Project Structure
+
+Main files:
+
+- main.py
+  Main application entry point
+- plc_client.py
+  Snap7 PLC communication and sequence monitoring
+- database.py
+  SQLite database handling
+- report.py
+  PDF report generation
+- input_reader.py
+  Operator valve/program selection
+- test_programs/valve_map.json
+  Maps operator input to PLC test programs
+- test_programs/valve_tests.json
+  Contains test parameters and configuration
+
+Requirements
+
+Python version:
+
+- Python 3.13+
+
+Install required packages:
+
+pip install -r requirements.txt
+
+Running the Project
+
+Activate virtual environment:
+
+source venv/bin/activate
+
+Run the application:
+
+python3 main.py
+
+The operator can then:
+
+1. Select a valve ID
+2. Start the PLC sequence using the physical start button
+3. Wait for sequence completion
+4. Generate a PDF inspection report automatically
+
+PLC Communication
+
+The Raspberry Pi communicates directly with the Siemens S7-1200 PLC using the Snap7 library.
+
+The PLC:
+
+- executes the Ladder logic
+- controls outputs
+- manages step transitions
+
+The Raspberry Pi:
+
+- monitors PLC states
+- logs sequence data
+- generates reports
+
+Communication is performed through Siemens memory bits and output states.
+
+Report Generation
+
+After a completed sequence:
+
+- the test result is stored in SQLite
+- a PDF report is generated automatically
+- the report includes:
+  - valve information
+  - test parameters
+  - PLC phases detected
+  - sequence timing
+  - pressure graph structure
+
+Reports are saved in:
 
 reports/
-Generated PDF reports and pressure graphs.
 
-How The System Works
+Future Improvements
 
-1. Python selects a valve test program
-2. Raspberry Pi sends test parameters over OPC UA
-3. PLC or simulation server starts sequence
-4. PLC step states are monitored
-5. Pressure values are collected
-6. Test result is evaluated
-7. PDF report is generated automatically
+Planned future improvements include:
 
-PLC State Machine
-
-The system currently tracks these PLC phases:
-
-- FILLING
-- STABILIZING
-- HOLDING
-- VENTING
-- FINISHING
-- COMPLETE
-
-Simulation Mode
-
-Simulation mode allows the full software system to be tested without a real PLC.
-
-Simulation includes:
-
-- OPC UA server
-- PLC state progression
-- Pressure simulation
-- Valve outputs
-- PDF generation
-
-To enable simulation mode:
-
-Inside config.py:
-
-USE_REAL_PLC = False
-
-Then run:
-
-python opc_server.py
-
-In another terminal:
-
-python main.py
-
-Real PLC Mode
-
-When connected to the Siemens PLC:
-
-1. Configure OPC node IDs in:
-   config_files/real_plc.py
-
-2. Set:
-
-USE_REAL_PLC = True
-
-3. Start the Siemens OPC UA server
-
-4. Run:
-
-python main.py
-
-Current Features
-
-- OPC UA communication
-- PLC state tracking
-- Pressure hold test simulation
-- Pressure graphs
-- PDF inspection reports
-- Raspberry Pi compatible setup
-- Simulation/real PLC switching
-
-Planned Improvements
-
-- Real analog pressure input
-- SQLite test logging
-- Operator GUI
-- Alarm handling
-- Emergency stop handling
-- Multiple valve test programs
-- Automatic report archiving
-
-Dependencies
-
-Python libraries used:
-
-- asyncua
-- matplotlib
-- reportlab
-
-Install using:
-
-pip install asyncua matplotlib reportlab
-
-Example Test Types
-
-Standard pressure test
-Pressure hold / leak test
-
-Hardware
-
-Current development hardware:
-
-- Raspberry Pi 5
-- MacBook development environment
-- Siemens PLC (planned integration)
-- Pneumatic switchboard simulation setup
-
-Project Status
-
-Current status:
-Software proof-of-concept completed.
-
-The system successfully:
-
-- Simulates PLC sequences
-- Tracks PLC phases
-- Generates reports
-- Runs on Raspberry Pi
-- Supports future Siemens PLC integration
+- Real pressure sensor integration
+- RFID/barcode scanning
+- Multiple valve program support
+- Expanded PLC sequence library
+- Improved industrial HMI integration
+- Real-time pressure plotting

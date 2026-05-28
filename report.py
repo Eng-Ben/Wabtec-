@@ -1,11 +1,15 @@
+from datetime import datetime
+
+import matplotlib.pyplot as plt
+from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
-from reportlab.lib import colors
-from datetime import datetime
-import matplotlib.pyplot as plt
 
 
 def create_pressure_graph(test_result, graph_path):
+    # Creates a simple graph from the logged pressure samples.
+    # In the current prototype, pressure is set to 0 when no real pressure sensor is connected.
+    # The graph structure is still kept so real pressure data can be added later.
     series = test_result["pressure_series"]
 
     times = [point["time"] for point in series]
@@ -28,6 +32,8 @@ def create_pressure_graph(test_result, graph_path):
 
 
 def get_phase_summary(test_result):
+    # Extracts the different PLC phases detected during the test.
+    # Duplicate phases are removed so the report only shows the sequence once.
     phases = []
 
     for point in test_result["pressure_series"]:
@@ -43,6 +49,7 @@ def get_phase_summary(test_result):
 
 
 def draw_fields(c, fields, x, y):
+    # Helper function for writing label-value pairs in the PDF.
     c.setFont("Helvetica", 11)
 
     for label, value in fields:
@@ -53,6 +60,7 @@ def draw_fields(c, fields, x, y):
 
 
 def generate_pdf_report(test_result, output_path):
+    # Generates a PDF report from the completed PLC test result.
     graph_path = output_path.replace(".pdf", "_graph.png")
     create_pressure_graph(test_result, graph_path)
 
@@ -70,6 +78,7 @@ def generate_pdf_report(test_result, output_path):
     c.setFont("Helvetica-Bold", 18)
     c.drawString(50, 800, "Valve Pressure Inspection Report")
 
+    # Shows PASS in green and FAIL in red to make the result easy to identify.
     if test_result["result"] == "PASS":
         c.setFillColor(colors.green)
     else:
@@ -123,6 +132,7 @@ def generate_pdf_report(test_result, output_path):
 
     y = draw_fields(c, result_fields, 50, y)
 
+    # Adds extra information only for pressure hold tests.
     if test_result["test_type"] == "pressure_hold":
         y -= 20
 

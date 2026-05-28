@@ -1,6 +1,8 @@
 import sqlite3
 from datetime import datetime
 
+# SQLite database used for storing completed inspection results
+# and logged sequence samples from the PLC test runs.
 DB_PATH = "data/pressure_data.db"
 
 
@@ -8,6 +10,7 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
+    # Stores the final result data for each completed inspection.
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS inspection_results (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -24,6 +27,9 @@ def init_db():
             result TEXT
         )
     """)
+
+    # Stores the logged sequence samples collected during the test run.
+    # This structure allows future plotting and traceability of the sequence progression.
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS pressure_samples (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -42,6 +48,7 @@ def save_test_result(valve_id, result):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
+    # Inserts the final inspection result into the database.
     cursor.execute(
         """
         INSERT INTO inspection_results (
@@ -81,6 +88,8 @@ def save_pressure_samples(test_id, pressure_series):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
+    # Saves all collected sequence samples from the PLC test loop.
+    # Each row represents one logged moment during the sequence execution.
     for sample in pressure_series:
         cursor.execute(
             """
@@ -91,7 +100,12 @@ def save_pressure_samples(test_id, pressure_series):
                 pressure_value
             ) VALUES (?, ?, ?, ?)
         """,
-            (test_id, datetime.now().isoformat(), sample["time"], sample["pressure"]),
+            (
+                test_id,
+                datetime.now().isoformat(),
+                sample["time"],
+                sample["pressure"],
+            ),
         )
 
     conn.commit()
@@ -102,6 +116,8 @@ def read_pressure_samples(test_id):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
+    # Reads all stored samples for one specific test run.
+    # Mainly used for report generation and debugging.
     cursor.execute(
         """
         SELECT sample_time, pressure_value

@@ -3,28 +3,35 @@ import time
 import snap7
 from snap7.util import get_bool, set_bool
 
+# Static network settings for the Siemens S7-1200 PLC.
+# The IP address must match the address configured in TIA Portal.
 PLC_IP = "192.168.0.100"
 PLC_RACK = 0
 PLC_SLOT = 1
 
 
 def read_m_bit(plc, byte_index, bit_index):
+    # Reads one memory bit from the PLC marker area, for example M0.1.
     data = plc.mb_read(byte_index, 1)
     return get_bool(data, 0, bit_index)
 
 
 def write_m_bit(plc, byte_index, bit_index, value):
+    # Writes one memory bit to the PLC marker area.
+    # The full byte is read first so the other bits in the same byte are not overwritten.
     data = plc.mb_read(byte_index, 1)
     set_bool(data, 0, bit_index, value)
     plc.mb_write(byte_index, 1, data)
 
 
 def read_q_bit(plc, byte_index, bit_index):
+    # Reads one output bit from the PLC output area, for example Q0.0.
     data = plc.ab_read(byte_index, 1)
     return get_bool(data, 0, bit_index)
 
 
 def get_active_phase(step_1, step_2, step_3, step_4, step_5, step_6):
+    # Converts the active PLC step bits into a readable phase name for logging and reports.
     if step_1:
         return "STEP_1"
     if step_2:
@@ -42,6 +49,8 @@ def get_active_phase(step_1, step_2, step_3, step_4, step_5, step_6):
 
 
 def reset_sequence_steps(plc):
+    # Clears the internal step bits before arming the test sequence.
+    # This prevents the PLC from continuing from an old unfinished state.
     write_m_bit(plc, 0, 1, False)
     write_m_bit(plc, 0, 2, False)
     write_m_bit(plc, 0, 3, False)
@@ -51,6 +60,9 @@ def reset_sequence_steps(plc):
 
 
 def prepare_sequence_from_python(plc):
+    # The Raspberry Pi does not directly start the PLC sequence.
+    # It only prepares the system by setting M10.0, which is used as an enable/arm signal.
+    # The actual start is still done with the physical button connected to I0.0.
     reset_sequence_steps(plc)
     time.sleep(0.2)
 
@@ -65,6 +77,7 @@ def run_plc_test(test_program):
 
     try:
         try:
+            # Opens the Snap7 connection from the Raspberry Pi to the Siemens PLC.
             plc.connect(PLC_IP, PLC_RACK, PLC_SLOT)
         except Exception as e:
             raise RuntimeError(
@@ -93,6 +106,8 @@ def run_plc_test(test_program):
         while True:
             elapsed_time = time.time() - start_time
 
+            # Reads the step bits from the PLC.
+            # These marker bits represent where the Ladder sequence currently is.
             step_1 = read_m_bit(plc, 0, 1)
             step_2 = read_m_bit(plc, 0, 2)
             step_3 = read_m_bit(plc, 0, 3)
@@ -100,6 +115,8 @@ def run_plc_test(test_program):
             step_5 = read_m_bit(plc, 0, 5)
             step_6 = read_m_bit(plc, 0, 6)
 
+            # Reads the relevant physical output states from the PLC.
+            # These values are used for monitoring and documentation of the test run.
             light_dp = read_q_bit(plc, 0, 0)
             finish_light = read_q_bit(plc, 0, 4)
             v5 = read_q_bit(plc, 0, 5)
@@ -118,6 +135,8 @@ def run_plc_test(test_program):
             if active_phase != "WAITING":
                 last_phase = active_phase
 
+            # Stores a time sample for the report.
+            # Pressure is currently set to 0 because the prototype does not read a real pressure sensor yet.
             pressure_series.append(
                 {
                     "time": round(elapsed_time, 1),
@@ -138,6 +157,7 @@ def run_plc_test(test_program):
             if finish_light:
                 print("PLC sequence completed")
 
+                # Disarms the PLC after the sequence is complete.
                 write_m_bit(plc, 10, 0, False)
                 print("System disarmed: M10.0 Tag_1 = FALSE")
                 break
