@@ -41,6 +41,23 @@ def get_active_phase(step_1, step_2, step_3, step_4, step_5, step_6):
     return "WAITING"
 
 
+def reset_sequence_steps(plc):
+    write_m_bit(plc, 0, 1, False)
+    write_m_bit(plc, 0, 2, False)
+    write_m_bit(plc, 0, 3, False)
+    write_m_bit(plc, 0, 4, False)
+    write_m_bit(plc, 0, 5, False)
+    write_m_bit(plc, 0, 6, False)
+
+
+def prepare_sequence_from_python(plc):
+    reset_sequence_steps(plc)
+    time.sleep(0.2)
+
+    write_m_bit(plc, 10, 0, True)
+    print("System armed from Python: M10.0 Tag_1 = TRUE")
+
+
 def run_plc_test(test_program):
     plc = snap7.client.Client()
     start_time = time.time()
@@ -49,7 +66,6 @@ def run_plc_test(test_program):
     try:
         try:
             plc.connect(PLC_IP, PLC_RACK, PLC_SLOT)
-
         except Exception as e:
             raise RuntimeError(
                 f"Could not connect to PLC at {PLC_IP}. "
@@ -69,11 +85,8 @@ def run_plc_test(test_program):
         print(f"PLC IP: {PLC_IP}")
         print()
 
-        write_m_bit(plc, 10, 0, False)
-        time.sleep(0.2)
-
-        write_m_bit(plc, 10, 0, True)
-        print("Start signal sent to PLC: M10.0 = TRUE")
+        prepare_sequence_from_python(plc)
+        print("Waiting for physical button_start I0.0...")
 
         last_phase = "WAITING"
 
@@ -124,14 +137,15 @@ def run_plc_test(test_program):
 
             if finish_light:
                 print("PLC sequence completed")
+
+                write_m_bit(plc, 10, 0, False)
+                print("System disarmed: M10.0 Tag_1 = FALSE")
                 break
 
             if elapsed_time >= max_test_time:
                 raise TimeoutError("PLC sequence timed out before finish_ligth(test).")
 
             time.sleep(0.5)
-
-        write_m_bit(plc, 10, 0, False)
 
         return {
             "program_id": test_program.get("program_id"),
@@ -154,11 +168,6 @@ def run_plc_test(test_program):
         }
 
     finally:
-        try:
-            write_m_bit(plc, 10, 0, False)
-        except Exception:
-            pass
-
         try:
             plc.disconnect()
         except Exception:
